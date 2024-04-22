@@ -1,3 +1,5 @@
+import os.path
+import shutil
 import subprocess
 
 import requests
@@ -40,14 +42,31 @@ class PubMedCorpusCreator(PubMedFetcher):
 
         publications = self._extract_publications(ids)
 
+        if not os.path.exists(output_folder):
+            os.mkdir(output_folder)
+
+        corpus_folder = f"{output_folder}/{corpus_name}"
+
+        if not os.path.exists(corpus_folder):
+            os.mkdir(corpus_folder)
+
         for publication in publications:
             if "PMC" in publication.article_ids:
-                pmc_url = self._get_pmc_url(publication.article_ids["PMC"])
+                pmc_id = publication.article_ids["PMC"]
+                pmc_url = self._get_pmc_url(pmc_id)
                 pdf_link = self._get_pdf_link(pmc_url)
 
-                result = self._download_pdf(pdf_link)
+                if not self._download_pdf(pdf_link):
+                    continue
 
-                result = self._convert_to_text()
+                if not self._convert_to_text():
+                    continue
+
+                file_name = f"{corpus_folder}/{pmc_id}.txt"
+                shutil.copyfile(TEMP_TXT, file_name)
+
+                print(f"Copied {file_name}")
+
 
     def _get_pmc_url(self, pmc_id: str) -> str:
         return f"{PMC_BASE_ARTICLES_URL}{pmc_id}/"
@@ -77,7 +96,8 @@ class PubMedCorpusCreator(PubMedFetcher):
 
     def _convert_to_text(self) -> bool:
         try:
-            subprocess.run(["pdftotext", "-layout", "-nodiag", TEMP_PDF])
+            #subprocess.run(["pdftotext", "-layout", "-nodiag", TEMP_PDF])
+            subprocess.run(["pdftotext", TEMP_PDF])
             return True
         except:
             return False
@@ -85,4 +105,4 @@ class PubMedCorpusCreator(PubMedFetcher):
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(100, ["dicom", "mri", "prostate"], "", "")
+    fetcher.create_corpus(100, ["dicom", "mri", "prostate"], "C:/Temp", "dicom_mri")
