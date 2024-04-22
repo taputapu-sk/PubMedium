@@ -1,3 +1,5 @@
+import subprocess
+
 import requests
 from pathlib import Path
 from Code.pubmed_fetcher import PubMedFetcher
@@ -12,7 +14,7 @@ HEADERS_PDF_LINK = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "en-US,en;q=0.9",
-    }
+}
 
 HEADERS_PDF = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
@@ -20,6 +22,8 @@ HEADERS_PDF = {
 }
 
 TEMP_PDF = r"C:\Temp\temp_pubmed.pdf"
+TEMP_TXT = r"C:\Temp\temp_pubmed.txt"
+
 
 class PubMedCorpusCreator(PubMedFetcher):
     """
@@ -29,6 +33,7 @@ class PubMedCorpusCreator(PubMedFetcher):
     Sapien adipiscing turpis id auctor in ligula parturient. Nisl nam donec congue curae; fusce
     lacinia duis vitae.
     """
+
     def create_corpus(self, size: int, topics: list[str], output_folder: str, corpus_name: str):
         ids = self._extract_ids_by_topics(topics)
         shuffle(ids)
@@ -41,8 +46,8 @@ class PubMedCorpusCreator(PubMedFetcher):
                 pdf_link = self._get_pdf_link(pmc_url)
 
                 result = self._download_pdf(pdf_link)
-                # print(publication.article_ids["PMC"])
 
+                result = self._convert_to_text()
 
     def _get_pmc_url(self, pmc_id: str) -> str:
         return f"{PMC_BASE_ARTICLES_URL}{pmc_id}/"
@@ -61,13 +66,21 @@ class PubMedCorpusCreator(PubMedFetcher):
         # Send request to download the PDF
         response = requests.get(pdf_link, headers=HEADERS_PDF)
 
-        # Write the downloaded PDF content to a file
-        with open(TEMP_PDF, "wb") as file:
-            file.write(response.content)
+        try:
+            # Write the downloaded PDF content to a file
+            with open(TEMP_PDF, "wb") as file:
+                file.write(response.content)
 
-        return True
+            return True
+        except:
+            return False
 
-
+    def _convert_to_text(self) -> bool:
+        try:
+            subprocess.run(["pdftotext", "-layout", "-nodiag", TEMP_PDF])
+            return True
+        except:
+            return False
 
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
