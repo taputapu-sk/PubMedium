@@ -1,5 +1,5 @@
 import requests
-
+from pathlib import Path
 from Code.pubmed_fetcher import PubMedFetcher
 from numpy.random import shuffle
 from bs4 import BeautifulSoup
@@ -7,12 +7,19 @@ import xml.etree.ElementTree as ET
 
 NCBI_BASE_URL = "https://www.ncbi.nlm.nih.gov"
 PMC_BASE_ARTICLES_URL = "https://www.ncbi.nlm.nih.gov/pmc/articles/"
-HEADERS = {
+HEADERS_PDF_LINK = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "en-US,en;q=0.9",
     }
+
+HEADERS_PDF = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+    "Accept": "application/pdf",
+}
+
+TEMP_PDF = r"C:\Temp\temp_pubmed.pdf"
 
 class PubMedCorpusCreator(PubMedFetcher):
     """
@@ -32,7 +39,8 @@ class PubMedCorpusCreator(PubMedFetcher):
             if "PMC" in publication.article_ids:
                 pmc_url = self._get_pmc_url(publication.article_ids["PMC"])
                 pdf_link = self._get_pdf_link(pmc_url)
-                pass
+
+                result = self._download_pdf(pdf_link)
                 # print(publication.article_ids["PMC"])
 
 
@@ -40,14 +48,26 @@ class PubMedCorpusCreator(PubMedFetcher):
         return f"{PMC_BASE_ARTICLES_URL}{pmc_id}/"
 
     def _get_pdf_link(self, pmc_url: str) -> str:
-        request = requests.get(pmc_url, allow_redirects=True, headers=HEADERS)
+        request = requests.get(pmc_url, allow_redirects=True, headers=HEADERS_PDF_LINK)
         response = request.text
 
-        soup = BeautifulSoup(response)
+        soup = BeautifulSoup(response, parser="html")
 
         x_link = soup.find("a", {"class": "int-view"})
         link = x_link.attrs["href"]
         return f"{NCBI_BASE_URL}{link}"
+
+    def _download_pdf(self, pdf_link: str) -> bool:
+        # Send request to download the PDF
+        response = requests.get(pdf_link, headers=HEADERS_PDF)
+
+        # Write the downloaded PDF content to a file
+        with open(TEMP_PDF, "wb") as file:
+            file.write(response.content)
+
+        return True
+
+
 
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
