@@ -100,6 +100,10 @@ class PubMedCorpusCreator(PubMedFetcher):
                 pmc_url = self._get_pmc_url(pmc_id)
                 pdf_link = self._get_pdf_link(pmc_url)
 
+                if len(pdf_link) == 0:
+                    print("PDF link not found. Skipping.")
+                    continue
+
                 if not self._download_pdf(pdf_link):
                     print("PDF link not found. Skipping.")
                     continue
@@ -123,7 +127,7 @@ class PubMedCorpusCreator(PubMedFetcher):
                     bibtex += f"{publication.to_bibtex_entry()}\n\n"
 
                 count += 1
-                print(f"Copied {file_name} ({count} of {len(publications)})")
+                print(f"Copied {file_name} ({count} of {min(len(publications), size)})")
 
                 if count >= size:
                     print(f"*** All publications processed. Created {count} text files.")
@@ -135,7 +139,7 @@ class PubMedCorpusCreator(PubMedFetcher):
         if create_bibtex:
             bibtex_file = f"{corpus_folder}/{corpus_name}.bib"
 
-            with open(bibtex_file, "w") as file:
+            with open(bibtex_file, "w", encoding="utf-8") as file:
                 file.write(bibtex)
 
     # region Protected auxiliary
@@ -159,8 +163,15 @@ class PubMedCorpusCreator(PubMedFetcher):
         soup = BeautifulSoup(response, "html.parser")
 
         x_link = soup.find("a", {"class": "int-view"})
-        link = x_link.attrs["href"]
-        return f"{NCBI_BASE_URL}{link}"
+
+        if x_link is None:
+            return ""
+
+        if "href" in x_link.attrs:
+            link = x_link.attrs["href"]
+            return f"{NCBI_BASE_URL}{link}"
+        else:
+            return ""
 
     def _download_pdf(self, pdf_link: str) -> bool:
         """
@@ -209,4 +220,4 @@ class PubMedCorpusCreator(PubMedFetcher):
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp", "", True, True)
+    fetcher.create_corpus(100, ["dicom", "pacs"], "C:/Temp", "", True, True)
