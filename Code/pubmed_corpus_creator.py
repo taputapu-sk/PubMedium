@@ -5,6 +5,7 @@ import subprocess
 import requests
 from bs4 import BeautifulSoup
 from numpy.random import shuffle
+from pandas import DataFrame
 
 from pubmed_fetcher import PubMedFetcher
 
@@ -35,6 +36,12 @@ TEMP_TXT = r"C:\Temp\temp_pubmed.txt"
 
 
 class PubMedCorpusCreator(PubMedFetcher):
+    def __init__(self):
+        """
+        Initialization of the info list.
+        """
+        self._infos = []
+
     """
     Creator of topic text corpora from PubMed publications.
     """
@@ -55,7 +62,6 @@ class PubMedCorpusCreator(PubMedFetcher):
         PubMedFetcher.print_intermediate_results = False
         ids = self._extract_ids_by_topics(topics)
         shuffle(ids)
-
 
         print(f"Found {len(ids)} publications for the topics.")
         publications = self._extract_publications(ids)
@@ -89,12 +95,19 @@ class PubMedCorpusCreator(PubMedFetcher):
                 file_name = f"{corpus_folder}/{pmc_id}.txt"
                 shutil.copyfile(TEMP_TXT, file_name)
 
+                # Entry for the infos:
+                info_entry = {"PMCID": pmc_id, "PMID": publication.publication_id, "Title": publication.article_title}
+                self._infos.append(info_entry)
+
                 count += 1
                 print(f"Copied {file_name} ({count} of {len(publications)})")
 
                 if count >= size:
                     print(f"*** All publications processed. Created {count} text files.")
                     break
+
+        df = DataFrame(self._infos)
+        df.to_csv(f"{corpus_folder}/info.csv")
 
     # region Protected auxiliary
     def _get_pmc_url(self, pmc_id: str) -> str:
@@ -154,4 +167,4 @@ class PubMedCorpusCreator(PubMedFetcher):
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "ct"], "C:/Temp")
+    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp")
