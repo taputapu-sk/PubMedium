@@ -36,6 +36,9 @@ TEMP_TXT = r"C:\Temp\temp_pubmed.txt"
 
 
 class PubMedCorpusCreator(PubMedFetcher):
+    """
+    Holds functionality for the creation of corpora based on full article texts.
+    """
     def __init__(self):
         """
         Initialization of the info list.

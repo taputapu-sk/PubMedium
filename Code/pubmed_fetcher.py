@@ -17,6 +17,9 @@ DEFAULT_SIZE_OF_EXTRACTION_PORTION = 200                                        
 # endregion
 
 class PubMedFetcher:
+    """
+    Holds functionality to fetch PubMed publications by topics.
+    """
     # region Class variables
     print_intermediate_results = True           # If set to True (default), all intermediate results will be printed.
     extract_references = True                   # If set to True (default, references will be extracted):
