@@ -45,7 +45,8 @@ class PubMedCorpusCreator(PubMedFetcher):
     """
     Creator of topic text corpora from PubMed publications.
     """
-    def create_corpus(self, size: int, topics: list[str], output_folder: str, corpus_name: str = ""):
+    def create_corpus(self, size: int, topics: list[str], output_folder: str, corpus_name: str = "",
+                      create_abstracts: bool = False):
         """
         Creates a text file corpus for a list of topics.
         :param size: The maximum size of the corpus to create.
@@ -54,6 +55,8 @@ class PubMedCorpusCreator(PubMedFetcher):
                               If the folder does not exist, it will be created.
         :param corpus_name: The name of the subfolder of output_folder in which to write the text files.
                             If left empty, the corpus name will be created using the topics.
+        :param create_abstracts: If set to true, a subfolder named "Abstracts" will be created in the corpus folder
+                                 with the abstracts of the articles stored under their PMC IDs as file names.
         """
         if len(topics) == 0:
             print("No topics defined. Canceling.")
@@ -77,6 +80,11 @@ class PubMedCorpusCreator(PubMedFetcher):
         if not os.path.exists(corpus_folder):
             os.mkdir(corpus_folder)
 
+        if create_abstracts:
+            abstracts_folder = f"{corpus_folder}/abstracts"
+            if not os.path.exists(abstracts_folder):
+                os.mkdir(abstracts_folder)
+
         count = 0
         for publication in publications:
             if "PMC" in publication.article_ids:
@@ -98,6 +106,9 @@ class PubMedCorpusCreator(PubMedFetcher):
                 # Entry for the infos:
                 info_entry = {"PMCID": pmc_id, "PMID": publication.publication_id, "Title": publication.article_title}
                 self._infos.append(info_entry)
+
+                if create_abstracts:
+                    self._add_abstract(pmc_id, publication.abstract, abstracts_folder)
 
                 count += 1
                 print(f"Copied {file_name} ({count} of {len(publications)})")
@@ -162,9 +173,22 @@ class PubMedCorpusCreator(PubMedFetcher):
             return True
         except:
             return False
+
+    def _add_abstract(self, pmc_id: str, abstract: str, abstract_folder: str):
+        """
+        Adds an abstract to the 'abstracts' subfolder.
+        :param pmc_id: The PMC ID of the article.
+        :param abstract: The text of the abstract.
+        :param abstract_folder: The abstract folder to write into.
+        :return: None.
+        """
+        file_name = f"{abstract_folder}/{pmc_id}.txt"
+
+        with open(file_name, "w") as file:
+            file.write(abstract)
     # endregion
 
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp")
+    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp", "", True)
