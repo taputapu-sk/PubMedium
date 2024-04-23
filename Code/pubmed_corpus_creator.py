@@ -1,9 +1,11 @@
 import os.path
 import shutil
 import subprocess
+
 import requests
-from numpy.random import shuffle
 from bs4 import BeautifulSoup
+from numpy.random import shuffle
+
 from pubmed_fetcher import PubMedFetcher
 
 # Base URL to fetch PDFs from:
@@ -94,10 +96,21 @@ class PubMedCorpusCreator(PubMedFetcher):
                     print(f"*** All publications processed. Created {count} text files.")
                     break
 
+    # region Protected auxiliary
     def _get_pmc_url(self, pmc_id: str) -> str:
+        """
+        Gets the PMC URL from a PMC ID.
+        :param pmc_id: The PMC ID.
+        :return: The corresponding URL of the article.
+        """
         return f"{PMC_BASE_ARTICLES_URL}{pmc_id}/"
 
     def _get_pdf_link(self, pmc_url: str) -> str:
+        """
+        Gets the link (URL) of the PDF file from a PMC ID.
+        :param pmc_url: The PMC ID.
+        :return: The URL of the PDF article.
+        """
         request = requests.get(pmc_url, allow_redirects=True, headers=HEADERS_PDF_LINK)
         response = request.text
 
@@ -108,7 +121,11 @@ class PubMedCorpusCreator(PubMedFetcher):
         return f"{NCBI_BASE_URL}{link}"
 
     def _download_pdf(self, pdf_link: str) -> bool:
-        # Send request to download the PDF
+        """
+        Downloads the PDF article.
+        :param pdf_link: The URL of the PDF file.
+        :return: True, if the download succeeded.
+        """
         response = requests.get(pdf_link, headers=HEADERS_PDF)
 
         try:
@@ -121,15 +138,20 @@ class PubMedCorpusCreator(PubMedFetcher):
             return False
 
     def _convert_to_text(self) -> bool:
+        """
+        Converts the article from PDF format to plain text.
+        :return: True if conversion succeeded.
+        """
         try:
-            #subprocess.run(["pdftotext", "-layout", "-nodiag", TEMP_PDF])
-            # Add stderr=subprocess.DEVNULL to supress annoying warnings from MikTeX.
+            # Added stderr=subprocess.DEVNULL to supress annoying warnings from MikTeX (ChatGPT).
+            # no options used for pdftotext (except for -q). TODO: make the options as parameters.
             subprocess.run(["pdftotext", "-q", TEMP_PDF], stderr=subprocess.DEVNULL)
             return True
         except:
             return False
+    # endregion
 
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "mri", "prostate"], "C:/Temp")
+    fetcher.create_corpus(5, ["dicom", "mri"], "C:/Temp")
