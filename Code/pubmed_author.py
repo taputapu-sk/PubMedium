@@ -43,3 +43,29 @@ class PubMedAuthor:
 
         return x
 
+    def to_string(self, format: str = "lf") -> str:
+        """
+        String representation.
+        :param format: Defines the format:
+                       "fl": First Name, Last Name
+                       "lf" (and default): Last Name, First Name.
+        :return:
+        """
+        if format == "fl":
+            if len(self.fore_name) > 0:
+                return f"{self.fore_name} {self.last_name}"
+            else:
+                return self.last_name
+        else:
+            if len(self.fore_name) > 0:
+                return f"{self.last_name}, {self.fore_name}"
+            else:
+                return self.last_name
+
+    def __str__(self):
+        """
+        Default string representation.
+        :return:
+        """
+        return self.to_string("lf")
+

@@ -46,7 +46,7 @@ class PubMedCorpusCreator(PubMedFetcher):
     Creator of topic text corpora from PubMed publications.
     """
     def create_corpus(self, size: int, topics: list[str], output_folder: str, corpus_name: str = "",
-                      create_abstracts: bool = False):
+                      create_abstracts: bool = False, create_bibtex: bool = False):
         """
         Creates a text file corpus for a list of topics.
         :param size: The maximum size of the corpus to create.
@@ -57,6 +57,9 @@ class PubMedCorpusCreator(PubMedFetcher):
                             If left empty, the corpus name will be created using the topics.
         :param create_abstracts: If set to true, a subfolder named "Abstracts" will be created in the corpus folder
                                  with the abstracts of the articles stored under their PMC IDs as file names.
+        :param create_bibtex: If set to True, a file named "<corpus_name>.bib" will be created in the corpus folder
+                              with the BibTeX references to the articles.
+
         """
         if len(topics) == 0:
             print("No topics defined. Canceling.")
@@ -85,6 +88,8 @@ class PubMedCorpusCreator(PubMedFetcher):
             if not os.path.exists(abstracts_folder):
                 os.mkdir(abstracts_folder)
 
+        bibtex = ""
+
         count = 0
         for publication in publications:
             if "PMC" in publication.article_ids:
@@ -104,11 +109,15 @@ class PubMedCorpusCreator(PubMedFetcher):
                 shutil.copyfile(TEMP_TXT, file_name)
 
                 # Entry for the infos:
-                info_entry = {"PMCID": pmc_id, "PMID": publication.publication_id, "Title": publication.article_title}
+                doi = publication.article_ids["DOI"] if "DOI" in publication.article_ids else ""
+                info_entry = {"PMCID": pmc_id, "PMID": publication.publication_id, "DOI": doi, "Title": publication.article_title}
                 self._infos.append(info_entry)
 
                 if create_abstracts:
                     self._add_abstract(pmc_id, publication.abstract, abstracts_folder)
+
+                if create_bibtex:
+                    bibtex += f"{publication.to_bibtex_entry()}\n\n"
 
                 count += 1
                 print(f"Copied {file_name} ({count} of {len(publications)})")
@@ -119,6 +128,12 @@ class PubMedCorpusCreator(PubMedFetcher):
 
         df = DataFrame(self._infos)
         df.to_csv(f"{corpus_folder}/info.csv")
+
+        if create_bibtex:
+            bibtex_file = f"{corpus_folder}/{corpus_name}.bib"
+
+            with open(bibtex_file, "w") as file:
+                file.write(bibtex)
 
     # region Protected auxiliary
     def _get_pmc_url(self, pmc_id: str) -> str:
@@ -184,11 +199,11 @@ class PubMedCorpusCreator(PubMedFetcher):
         """
         file_name = f"{abstract_folder}/{pmc_id}.txt"
 
-        with open(file_name, "w") as file:
+        with open(file_name, "w", encoding="utf-8") as file:
             file.write(abstract)
     # endregion
 
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp", "", True)
+    fetcher.create_corpus(5, ["dicom", "pacs"], "C:/Temp", "", True, True)

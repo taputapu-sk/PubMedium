@@ -80,6 +80,43 @@ class PubMedPublication:
 
         return x
 
+    def to_bibtex_entry(self) -> str:
+        # @article{PMID:271968,
+        # author = "Sanger, F. and Nicklen, S. and Coulson, A. R.",
+        # doi = "10.1073/pnas.74.12.5463",
+        # url = "https://doi.org/10.1073/pnas.74.12.5463",
+        # year = "1977",
+        # publisher = "Proceedings of the National Academy of Sciences",
+        # volume = "74",
+        # number = "12",
+        # pages = "5463--5467",
+        # title = "{DNA} sequencing with chain-terminating inhibitors",
+        # journal = "Proceedings of the National Academy of Sciences",
+        # PMID = "271968"
+        # }
+        result = f"@article{{PMID:{self.publication_id},\n"
+        if len(self.authors) == 0:
+            authors = "n.a."
+        elif len(self.authors) <= 3:
+            authors = [str(author) for author in self.authors]
+            authors = " and ".join(authors)
+        else:
+            authors = f"{str(self.authors[0])} et al."
+
+        result += f"\tauthor = \"{authors}\",\n"
+
+        doi = self.article_ids["DOI"] if "DOI" in self.article_ids else ""
+        result += f"\tdoi = \"{doi}\",\n"
+        result += f"\tyear = \"{self.publication_date.year}\",\n"
+        result += f"\tvolume = \"{self.volume}\",\n"
+        result += f"\tnumber = \"{self.issue}\",\n"
+        result += f"\tpages = \"{self.pagination}\",\n"
+        result += f"\ttitle = \"{self.article_title}\",\n"
+        result += f"\tjournal = \"{self.journal_title}\"\n"
+        result += "}"
+
+        return result
+
 if __name__ == '__main__':
     pmp = PubMedPublication()
 
