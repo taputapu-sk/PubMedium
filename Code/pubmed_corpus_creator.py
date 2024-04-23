@@ -154,4 +154,4 @@ class PubMedCorpusCreator(PubMedFetcher):
 if __name__ == '__main__':
     fetcher = PubMedCorpusCreator()
 
-    fetcher.create_corpus(5, ["dicom", "mri"], "C:/Temp")
+    fetcher.create_corpus(5, ["dicom", "ct"], "C:/Temp")
